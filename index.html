@@ -2,12 +2,13 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=0.8">
   <title>Simple Bixi</title>
 </head>
 <body>
   <table id=table>
     <tr>
+      <th></th>
       <th>Station</th>
       <th>Bikes</th>
       <th>Docks</th>
@@ -24,19 +25,34 @@ function updatePosition(position) {
 }
 
 function calculateDistance(station) {
-    var dx=station.lat-lat, dy=station.long-long;
-    station.distance = dx*dx + dy*dy;
+    // SO: calculate-distance-between-two-latitude-longitude-points-haversine-formula
+    var p = 0.017453292519943295;  // Math.PI / 180
+    var a = 0.5 - Math.cos((lat - station.lat) * p)/2 +
+          Math.cos(lat * p) * Math.cos(station.lat * p) *
+          (1 - Math.cos((station.long - long) * p))/2;
+    station.distance = 12742 * Math.asin(Math.sqrt(a));  // 2 * R; R = 6371 km
 }
 
 function compare(s1, s2) {
-    return s2.distance - s1.distance
+    return s1.distance - s2.distance
+}
+
+function hyperlink(station) {
+    var url = "https://maps.google.com/maps?f=d&dirflg=w&"
+            + "saddr="+lat+','+long+"&"
+            + "daddr="+station.lat+','+station.long;
+    // hackish way of ensuring right pad
+    var prettyDistance = (station.distance > 9 ? "9+" : parseInt(10*station.distance)/10+".0").slice(0,3)+"&nbsp;km";
+    return "<small><a href='"+url+"'>"+prettyDistance+"</a></small>"
 }
 
 function displayStation(station, i) {
     var row = table.insertRow(table.children.length);
-    row.insertCell(0).innerHTML = station.name;
-    row.insertCell(1).innerHTML = station.nbBikes;
-    row.insertCell(2).innerHTML = station.nbEmptyDocks;
+    row.insertCell(0).innerHTML = hyperlink(station);
+    row.insertCell(1).innerHTML = station.name.split('(')[0].replace(/\s*\/\s*/,' / ');
+    row.insertCell(2).innerHTML = station.nbBikes;
+    row.insertCell(3).innerHTML = station.nbEmptyDocks;
+    row.insertCell(4).innerHTML = "("+(station.nbBikes+station.nbEmptyDocks)+")";
 }
 
 function clearTable() {
@@ -49,7 +65,7 @@ function display(event) {
     var stations = JSON.parse(xhr.response);
     stations.forEach(calculateDistance);
     clearTable();
-    stations.sort(compare).forEach(displayStation);
+    stations.sort(compare).reverse().forEach(displayStation);
 }
 
 var lat = null;
