@@ -62,7 +62,7 @@ function clearTable() {
 }
 
 function display(event) {
-    var stations = JSON.parse(xhr.response);
+    var stations = JSON.parse(xhr.response).stations;
     stations.forEach(calculateDistance);
     clearTable();
     stations.sort(compare).reverse().forEach(displayStation);
